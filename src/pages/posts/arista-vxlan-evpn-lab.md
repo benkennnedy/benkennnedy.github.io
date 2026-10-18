@@ -190,6 +190,76 @@ Those four entries do not represent four different VXLAN tunnels. There are two 
 
 No Type 1 or Type 4 routes appear because the servers are single-attached; this lab does not use EVPN multihoming or Ethernet segments.
 
+## Forwarding-Plane Verification
+
+The EVPN routes confirm that the control plane is working. I also checked the VXLAN and tenant routing tables to confirm that EOS had programmed the forwarding state.
+
+### Remote MAC and VTEP on LEAF1
+
+```text
+LEAF1#show vxlan address-table
+          Vxlan Mac Address Table
+----------------------------------------------------------------------
+
+VLAN  Mac Address     Type      Prt  VTEP          Moves  Last Move
+----  -----------     ----      ---  ----          -----  ---------
+  10  5254.006f.0190  EVPN      Vx1  10.1.255.33   1      1:12:28 ago
+
+Total Remote Mac Addresses for this criterion: 1
+```
+
+LEAF1 has learned Server3's MAC through EVPN and installed it against LEAF3's VTEP. This connects the Type 2 route to the forwarding table: traffic for `5254.006f.0190` is sent through `Vxlan1` towards `10.1.255.33`.
+
+```text
+LEAF1#show vxlan vtep
+Remote VTEPS for Vxlan1:
+
+VTEP             Tunnel Type(s)
+---------------- ----------------
+10.1.255.33      flood, unicast
+
+Total number of remote VTEPS: 1
+```
+
+The `flood` role comes from LEAF3's Type 3 IMET membership, while `unicast` forwarding is driven by the remote MAC information learned through Type 2 routes. The MAC table records one historical move; I would investigate if this counter continued to increase, as repeated moves could indicate MAC instability.
+
+### Tenant Routes on LEAF2
+
+```text
+LEAF2#show ip route vrf TENANT1
+
+VRF: TENANT1
+Gateway of last resort is not set
+
+ B I      10.10.10.11/32 [200/0]
+           via VTEP 10.1.255.11 VNI 50000
+           router-mac 52:54:00:74:bb:14 local-interface Vxlan1
+ B I      10.10.10.33/32 [200/0]
+           via VTEP 10.1.255.33 VNI 50000
+           router-mac 52:54:00:79:2b:8f local-interface Vxlan1
+ B I      10.10.10.0/24 [200/0]
+           via VTEP 10.1.255.11 VNI 50000
+           router-mac 52:54:00:74:bb:14 local-interface Vxlan1
+ C        10.20.20.0/24
+           directly connected, Vlan20
+```
+
+The two `/32` routes direct traffic to the VTEP that hosts each remote server. The broader `10.10.10.0/24` Type 5 route has selected LEAF1 in this capture, while `10.20.20.0/24` remains directly connected on LEAF2. Without BGP multipath, EOS installs one best `/24` path in the IP RIB and retains the other EVPN advertisement as a backup. The remote VNI and router MAC entries confirm symmetric IRB through L3VNI 50000.
+
+### Configuration Correction
+
+I found one probable typo in LEAF2's VLAN 20 service. VLAN 20 maps to VNI `10020`, but its route target was configured as `65000:10200`. Route targets can technically use any value, but this conflicts with the VNI, RD suffix and the convention used elsewhere in the fabric. I corrected the service block to:
+
+```text
+router bgp 65000
+   vlan 20
+      rd 10.0.255.22:10020
+      route-target both 65000:10020
+      redistribute learned
+```
+
+The mismatch does not affect this test because VLAN 20 currently exists on only one VTEP and inter-subnet routing uses the shared L3VNI route target `65000:50000`. It would prevent another VTEP using `65000:10020` from importing LEAF2's VLAN 20 Type 2 and Type 3 routes.
+
 ## What I took away
 
 The lab made the roles of all components much clearer:
