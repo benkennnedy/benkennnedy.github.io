@@ -1,11 +1,11 @@
 ---
 layout: ../../layouts/PostLayout.astro
 title: "TCP/IP Vol 2: Chapter 3 Lab"
-summary: ""
+summary: "BGP lab from Jeff Doyle's TCP/IP Vol 2"
 date: 2026-09-17
 type: "Post"
 category: "Routing"
-tags: ["BGP", "EIGRP", "OSPF", "iBGP", "Route Filtering"]
+tags: ["BGP", "OSPF", "iBGP", "Route Filtering"]
 ---
 
 ![Three-AS BGP lab topology](/images/posts/bgp-three-as-lab.png)

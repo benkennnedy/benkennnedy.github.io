@@ -30,14 +30,13 @@ const certifications = [
   <main>
     <div class="container hero">
       <div class="hero-copy">
-        <div class="eyebrow">Network Engineer · Automation · Infrastructure</div>
-        <h1>Engineering networks that are easier to operate, automate and trust.</h1>
-        <p class="lede">Production network engineer focused on automating and improving enterprise network operations — using Python, APIs, infrastructure as code and modern tooling to build reliable, scalable and easier-to-manage infrastructure.</p>
+        <h1>Welcome!</h1>
+        <p class="lede">Welcome to my website! I try to post consistently about the things I'm currently studying and labbing, or anything network-related.</p>
         <div class="actions"><a class="button primary" href="/posts">Read posts</a><a class="button" href="/contact">Contact</a></div>
       </div>
     </div>
 
-    <section class="section"><div class="container"><div class="section-head"><div><div class="eyebrow">Latest posts</div><h2>From the lab and notebook.</h2></div></div>
+    <section class="section"><div class="container"><div class="section-head"><div><h2>Recent Posts</h2></div></div>
       <div class="post-feed compact">
         {posts.map(post => <article class="post-feed-item"><time class="post-feed-date">{fmt(post.date)}</time><div class="post-feed-body"><div class="meta">{post.category ?? post.type ?? 'Post'}</div><h3><a href={`/posts/${post.slug}`}>{post.title}</a></h3><p>{post.summary}</p><div class="tags">{(post.tags ?? []).map(tag => <span class="tag">{tag}</span>)}</div><a class="read-more" href={`/posts/${post.slug}`}>Read post →</a></div></article>)}
       </div>
